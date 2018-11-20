@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: approval-kafka
+  labels:
+    app: approval
+spec:
+  ports:
+  - name: approval-kafka
+    port: 9092
+  - name: approval-zookeeper
+    port: 2181
+  selector:
+    name: approval-kafka

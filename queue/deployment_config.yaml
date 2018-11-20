@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: approval-kafka
+  labels:
+    app: approval
+spec:
+  replicas: 1
+  selector:
+    name: approval-kafka
+  template:
+    metadata:
+      name: approval-kafka
+      labels:
+        name: approval-kafka
+        app: approval
+    spec:
+      containers:
+      - name: approval-kafka
+        image: manageiq/kafka:latest
+        command:
+        - bin/kafka-server-start.sh
+        args:
+        - config/server.properties
+        - --override
+        - advertised.host.name=approval-kafka
+        - --override
+        - log.segment.bytes=10485760
+        - --override
+        - log.retention.bytes=10485760
+        volumeMounts:
+        - mountPath: /tmp/kafka-logs
+          name: approval-kafka-logs
+        ports:
+        - containerPort: 9092
+      - name: approval-zookeeper
+        image: manageiq/kafka:latest
+        command:
+        - bin/zookeeper-server-start.sh
+        args:
+        - config/zookeeper.properties
+        volumeMounts:
+        - mountPath: /tmp/zookeeper
+          name: approval-zookeeper
+        ports:
+        - containerPort: 2181
+      volumes:
+      - name: approval-kafka-logs
+        emptyDir: {}
+      - name: approval-zookeeper
+        emptyDir: {}

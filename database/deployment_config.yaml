@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: approval-postgresql
+  labels:
+    app: approval
+spec:
+  strategy:
+    type: Recreate
+  triggers:
+  - type: ConfigChange
+  replicas: 1
+  selector:
+    name: approval-postgresql
+  template:
+    metadata:
+      name: approval-postgresql
+      labels:
+        name: approval-postgresql
+        app: approval
+    spec:
+      volumes:
+      - name: approval-postgresql
+        persistentVolumeClaim:
+          claimName: approval-postgresql
+      containers:
+      - name: approval-postgresql
+        image: docker.io/manageiq/postgresql:latest
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: approval-postgresql
+          mountPath: "/var/lib/pgsql/data"
+        env:
+        - name: POSTGRESQL_USER
+          value: root
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: approval-database-secrets
+              key: database-password
+        - name: POSTGRESQL_DATABASE
+          value: approval_production

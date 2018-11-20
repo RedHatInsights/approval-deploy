@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: approval-api
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: approval-api
+    labels:
+      app: approval
+  spec:
+    ports:
+    - name: approval-api
+      port: 8080
+      targetPort: 3000
+    selector:
+      name: approval-api
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: approval-api
+    labels:
+      app: approval
+  spec:
+    replicas: 1
+    selector:
+      name: approval-api
+    template:
+      metadata:
+        name: approval-api
+        labels:
+          app: approval
+          name: approval-api
+      spec:
+        containers:
+        - name: approval-api
+          image: ${IMAGE_NAMESPACE}/approval-api:latest
+          ports:
+          - containerPort: 3000
+          env:
+          - name: DATABASE_USER
+            value: root
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: approval-database-secrets
+                key: database-password
+          - name: DATABASE_NAME
+            value: approval_production
+          - name: DATABASE_HOST
+            value: approval-postgresql
+          - name: DATABASE_PORT
+            value: "5432"
+          - name: QUEUE_HOST
+            value: ${QUEUE_HOST}
+          - name: QUEUE_NAME
+            value: platform.approval
+          - name: QUEUE_PORT
+            value: "9092"
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+    triggers:
+      - type: ImageChange
+        imageChangeParams:
+          automatic: true
+          containerNames:
+            - approval-api
+          from:
+            kind: ImageStreamTag
+            name: approval-api:latest
+            namespace: ${IMAGE_NAMESPACE}
+parameters:
+- name: IMAGE_NAMESPACE
+  displayName: Image Namespace
+  description: Namespace which contains the image stream to pull from
+  value: buildfactory
+- name: QUEUE_HOST
+  displayName: Message Queue Hostname
+  description: Hostname which will be used to contact the message queue.
+  value: approval-kafka
