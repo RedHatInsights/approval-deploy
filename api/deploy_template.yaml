@@ -79,4 +79,4 @@ parameters:
 - name: QUEUE_HOST
   displayName: Message Queue Hostname
   description: Hostname which will be used to contact the message queue.
-  value: approval-kafka
+  required: true
