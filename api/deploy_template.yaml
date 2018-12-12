@@ -39,19 +39,15 @@ objects:
           ports:
           - containerPort: 3000
           env:
-          - name: DATABASE_USER
-            value: root
-          - name: DATABASE_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: approval-database-secrets
-                key: database-password
-          - name: DATABASE_NAME
-            value: approval_production
           - name: DATABASE_HOST
             value: approval-postgresql
           - name: DATABASE_PORT
             value: "5432"
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: approval-database-secrets
+                key: database-url
           - name: QUEUE_HOST
             value: ${QUEUE_HOST}
           - name: QUEUE_NAME
