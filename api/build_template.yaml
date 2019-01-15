@@ -17,6 +17,9 @@ objects:
   metadata:
     name: approval-api
   spec:
+    resources:
+      limits:
+        memory: 1Gi
     source:
       type: Git
       git:
