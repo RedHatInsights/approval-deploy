@@ -58,6 +58,11 @@ objects:
             value: platform.approval
           - name: QUEUE_PORT
             value: "9092"
+          - name: SECRET_KEY_BASE
+            valueFrom:
+              secretKeyRef:
+                name: approval-api-secrets
+                key: secret-key
           readinessProbe:
             tcpSocket:
               port: 3000
