@@ -28,6 +28,10 @@ objects:
       name: approval-api
     template:
       metadata:
+        annotations:
+          prometheus.io/path: /metrics
+          prometheus.io/port: '3000'
+          prometheus.io/scrape: 'true'
         name: approval-api
         labels:
           app: approval
