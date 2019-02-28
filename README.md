@@ -18,6 +18,9 @@ These are the parameters that can be used when building and deploying the applic
 | `QUEUE_HOST`                   | Queue host/service name                                 |                                  |
 | `DATABASE_PASSWORD`            | PostgreSQL database password                            | generated from "[a-zA-Z0-9]{8}"  |
 | `SECRET_KEY`                   | Rails secret key                                        | generated from "[a-f0-9]{128}"   |
+| `RBAC_HOST`                    | Host to use for the RBAC service URL                    |                                  |
+| `RBAC_PORT`                    | Port to use for the RBAC service URL                    | 8080                             |
+| `RBAC_SCHEME`                  | Scheme to use for the RBAC service URL                  | http                             |
 
 ---------------------------------------------------------------------------------------------------------
 
@@ -42,6 +45,7 @@ Parameters file (`params-file`) contains the following:
 ```plain
 IMAGE_NAMESPACE=approval
 QUEUE_HOST=approval-kafka
+RBAC_HOST=rbac.rbac.svc
 ```
 
 1. Ensure you are working in the correct namespace
@@ -75,6 +79,7 @@ Parameters file (`params-file`) contains the following:
 ```plain
 QUEUE_HOST=platform-mq-ci-kafka-bootstrap.platform-mq-ci.svc
 PATH_PREFIX=r/insights/platform
+RBAC_HOST=rbac.rbac-ci.svc.cluster.local
 ```
 
 1. Ensure you are working in the correct namespace
