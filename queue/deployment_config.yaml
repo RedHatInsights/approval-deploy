@@ -33,6 +33,9 @@ spec:
           name: approval-kafka-logs
         ports:
         - containerPort: 9092
+        resources:
+          limits:
+            memory: 1024Mi
       - name: approval-zookeeper
         image: manageiq/kafka:latest
         command:
