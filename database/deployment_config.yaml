@@ -33,11 +33,14 @@ spec:
           mountPath: "/var/lib/pgsql/data"
         env:
         - name: POSTGRESQL_USER
-          value: root
+          valueFrom:
+            secretKeyRef:
+              name: approval-db
+              key: username
         - name: POSTGRESQL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: approval-database-secrets
-              key: database-password
+              name: approval-db
+              key: password
         - name: POSTGRESQL_DATABASE
           value: approval_production

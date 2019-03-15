@@ -46,14 +46,22 @@ objects:
           - name: APP_NAME
             value: ${APP_NAME}
           - name: DATABASE_HOST
-            value: approval-postgresql
-          - name: DATABASE_PORT
-            value: "5432"
-          - name: DATABASE_URL
             valueFrom:
               secretKeyRef:
-                name: approval-database-secrets
-                key: database-url
+                name: approval-db
+                key: hostname
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: approval-db
+                key: password
+          - name: DATABASE_PORT
+            value: "5432"
+          - name: DATABASE_USER
+            valueFrom:
+              secretKeyRef:
+                name: approval-db
+                key: username
           - name: PATH_PREFIX
             value: ${PATH_PREFIX}
           - name: QUEUE_HOST
