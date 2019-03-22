@@ -1,7 +1,0 @@
-#!/bin/bash
-
-oc delete all -l app=approval
-
-oc delete pvc approval-postgresql
-
-oc delete secret -l app=approval
