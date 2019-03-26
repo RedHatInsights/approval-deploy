@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: pam-postgresql
+  labels:
+    app: approval
+spec:
+  strategy:
+    type: Recreate
+  triggers:
+  - type: ConfigChange
+  replicas: 1
+  selector:
+    name: pam-postgresql
+  template:
+    metadata:
+      name: pam-postgresql
+      labels:
+        name: pam-postgresql
+        app: approval
+    spec:
+      volumes:
+      - name: pam-postgresql
+        persistentVolumeClaim:
+          claimName: pam-postgresql
+      containers:
+      - name: pam-postgresql
+        image: docker.io/centos/postgresql-10-centos7:latest
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: pam-postgresql
+          mountPath: "/var/lib/pgsql/data"
+        env:
+        - name: POSTGRESQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: pam-db
+              key: username
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pam-db
+              key: password
+        - name: POSTGRESQL_DATABASE
+          value: pam_production

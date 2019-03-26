@@ -1,0 +1,219 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: approval-pam
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: approval-pam
+    labels:
+      app: approval
+  spec:
+    ports:
+    - name: approval-pam
+      port: 8080
+      targetPort: 8080
+    selector:
+      name: approval-pam
+- kind: Service
+  apiVersion: v1
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "ping"
+      port: 8888
+      targetPort: 8888
+    selector:
+      name: approval-pam
+  metadata:
+    name: approval-pam-ping
+    labels:
+      app: approval
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: approval-pam
+    labels:
+      app: approval
+  spec:
+    strategy:
+      type: Recreate
+    triggers:
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - approval-pam
+        from:
+          kind: ImageStreamTag
+          name: approval-pam:latest
+          namespace: ${IMAGE_NAMESPACE}
+    - type: ConfigChange
+    replicas: 1
+    selector:
+      name: approval-pam
+    template:
+      metadata:
+        name: approval-pam
+        labels:
+          app: approval
+          name: approval-pam
+      spec:
+        terminationGracePeriodSeconds: 60
+        containers:
+        - name: approval-pam
+          image: ${IMAGE_NAMESPACE}/approval-pam:latest
+          resources:
+            limits:
+              memory: "${KIE_SERVER_MEMORY_LIMIT}"
+          livenessProbe:
+            exec:
+              command:
+              - "/bin/bash"
+              - "-c"
+              - "echo 'curl --fail --silent -u $KIE_ADMIN_USER:$KIE_ADMIN_PWD http://localhost:8080/services/rest/server/healthcheck' > /tmp/live; bash /tmp/live"
+            initialDelaySeconds: 180
+            timeoutSeconds: 2
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+              - "/bin/bash"
+              - "-c"
+              - "echo 'curl --fail --silent -u $KIE_ADMIN_USER:$KIE_ADMIN_PWD http://localhost:8080/services/rest/server/readycheck' > /tmp/ready; bash /tmp/ready"
+            initialDelaySeconds: 60
+            timeoutSeconds: 2
+            periodSeconds: 30
+            failureThreshold: 6
+          ports:
+          - name: jolokia
+            containerPort: 8778
+            protocol: TCP
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+          - name: ping
+            containerPort: 8888
+            protocol: TCP
+          env:
+          - name: DROOLS_SERVER_FILTER_CLASSES
+            value: "true"
+          - name: KIE_ADMIN_USER
+            valueFrom:
+              secretKeyRef:
+                name: approval-pam-secrets
+                key: kie-admin-user
+          - name: KIE_ADMIN_PWD
+            valueFrom:
+              secretKeyRef:
+                name: approval-pam-secrets
+                key: kie-admin-pwd
+          - name: KIE_MBEANS
+            value: "enabled"
+          - name: KIE_SERVER_CONTROLLER_PROTOCOL
+            value: "ws"
+          - name: KIE_SERVER_USER
+            valueFrom:
+              secretKeyRef:
+                name: approval-pam-secrets
+                key: kie-server-user
+          - name: KIE_SERVER_PWD
+            valueFrom:
+              secretKeyRef:
+                name: approval-pam-secrets
+                key: kie-server-pwd
+          - name: KIE_SERVER_CONTAINER_DEPLOYMENT
+            value: "${KIE_SERVER_CONTAINER_DEPLOYMENT}"
+          - name: KIE_SERVER_PERSISTENCE_DS
+            value: "java:/jboss/datasources/rhpam"
+          - name: DATASOURCES
+            value: "RHPAM"
+          - name: RHPAM_DATABASE
+            value: pam_production
+          - name: RHPAM_JNDI
+            value: "java:/jboss/datasources/rhpam"
+          - name: RHPAM_JTA
+            value: "true"
+          - name: RHPAM_DRIVER
+            value: "postgresql"
+          - name: KIE_SERVER_PERSISTENCE_DIALECT
+            value: "org.hibernate.dialect.PostgreSQLDialect"
+          - name: RHPAM_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: pam-db
+                key: username
+          - name: RHPAM_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pam-db
+                key: password
+          - name: RHPAM_SERVICE_HOST
+            valueFrom:
+              secretKeyRef:
+                name: pam-db
+                key: hostname
+          - name: RHPAM_SERVICE_PORT
+            value: "5432"
+          - name: KIE_SERVER_MGMT_DISABLED
+            value: "true"
+          - name: KIE_SERVER_STARTUP_STRATEGY
+            value: LocalContainersStartupStrategy
+          - name: JGROUPS_PING_PROTOCOL
+            value: "openshift.DNS_PING"
+          - name: OPENSHIFT_DNS_PING_SERVICE_NAME
+            value: approval-pam-ping
+          - name: OPENSHIFT_DNS_PING_SERVICE_PORT
+            value: "8888"
+          - name: BACKOFFICE_URL
+            value: "${BACKOFFICE_URL}"
+          - name: BACKOFFICE_CLIENT_ID
+            value: approval-api
+          - name: BACKOFFICE_CLIENT_ENV
+            value: ${BACKOFFICE_CLIENT_ENV}
+          - name: BACKOFFICE_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: approval-pam-secrets
+                key: backoffice-token
+          - name: APPROVAL_API_URL
+            value: "${APPROVAL_API_URL}"
+          - name: APPROVAL_API_IDENTIRY
+            valueFrom:
+              secretKeyRef:
+                name: approval-pam-secrets
+                key: approval-api-identity
+parameters:
+- name: IMAGE_NAMESPACE
+  displayName: Image Namespace
+  description: Namespace which contains the image stream to pull from
+  value: buildfactory
+  required: true
+- displayName: Approval API URL
+  description: REST URL to notify the start of notification
+  name: APPROVAL_API_URL
+  value: "http://approval-api:8080/api/approval/v0.1/stages"
+  required: true
+- displayName: Back Office API URL
+  description: REST URL to send certified emails
+  name: BACKOFFICE_URL
+  value: "https://access.redhat.com/r/insights-services/v1/sendEmails"
+  required: true
+- displayName: Back Office Client Environment
+  description: Back Office Client Environment
+  name: BACKOFFICE_CLIENT_ENV
+  value: qa
+  required: true
+- displayName: KIE Server Container Deployment
+  description: 'KIE Server Container deployment configuration in format: containerId=groupId:artifactId:version|c2=g2:a2:v2'
+  name: KIE_SERVER_CONTAINER_DEPLOYMENT
+  value: containerId=com.redhat:approval:1.0.0
+  required: true
+- displayName: KIE Server Container Memory Limit
+  description: KIE server Container memory limit
+  name: KIE_SERVER_MEMORY_LIMIT
+  value: 1Gi
+  required: false
+
